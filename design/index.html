@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Ideas - Kisdews</title>
+    <link rel="stylesheet" href="../shared/styles/common.css">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <header>
+        <h1><a href="../">Kisdews</a></h1>
+    </header>
+    
+    <nav>
+        <!-- 导航栏已移除，返回首页请点击标题 -->
+    </nav>
+    
+    <main class="design-main">
+        <!-- 游戏列表视图（首页） -->
+        <div id="games-view" class="games-view">
+            <div class="design-header">
+                <h2>游戏设计灵感</h2>
+                <div class="design-controls">
+                    <button id="new-game-btn" class="btn-primary">+ 新游戏</button>
+                </div>
+            </div>
+            <div id="games-container" class="games-grid">
+                <!-- 游戏标签将通过 JavaScript 动态加载 -->
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 游戏详情视图（单个游戏页面） -->
+        <div id="game-view" class="game-view" style="display: none;">
+            <div class="design-header">
+                <div class="game-header-top">
+                    <button id="back-btn" class="btn-secondary">← 返回</button>
+                    <h2 id="game-title">游戏名称</h2>
+                </div>
+                <div class="design-controls">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="搜索想法...">
+                        <button id="search-button">🔍</button>
+                    </div>
+                    <select id="tag-filter">
+                        <option value="">所有标签</option>
+                    </select>
+                    <button id="new-idea-btn" class="btn-primary">+ 新灵感</button>
+                </div>
+            </div>
+            <div id="ideas-container" class="ideas-grid">
+                <!-- 想法卡片将通过 JavaScript 动态加载 -->
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; Kisdews Games Page</p>
+    </footer>
+
+    <!-- 游戏编辑弹窗 -->
+    <div id="game-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="game-modal-title">新游戏</h3>
+                <button class="modal-close" id="game-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="game-form">
+                    <div class="form-group">
+                        <label for="game-name">游戏名称</label>
+                        <input type="text" id="game-name" placeholder="输入游戏名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="game-description">游戏描述</label>
+                        <textarea id="game-description" rows="4" placeholder="游戏简介..."></textarea>
+                    </div>
+                    <input type="hidden" id="game-id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="game-modal-cancel">取消</button>
+                <button type="button" class="btn-primary" id="game-modal-save">保存</button>
+                <button type="button" class="btn-danger" id="game-modal-delete" style="display: none;">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 想法编辑弹窗 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">新灵感</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="idea-form">
+                    <div class="form-group">
+                        <label for="idea-game">游戏项目</label>
+                        <select id="idea-game" required>
+                            <option value="">请选择游戏</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="idea-title">标题</label>
+                        <input type="text" id="idea-title" placeholder="想法标题" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="idea-content">详细描述</label>
+                        <textarea id="idea-content" rows="6" placeholder="详细描述你的想法..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="idea-tags">标签（用逗号分隔）</label>
+                        <input type="text" id="idea-tags" placeholder="玩法, 美术, 剧情">
+                    </div>
+                    <div class="form-group">
+                        <label for="idea-status">状态</label>
+                        <select id="idea-status">
+                            <option value="草稿">草稿</option>
+                            <option value="进行中">进行中</option>
+                            <option value="已完成">已完成</option>
+                            <option value="已废弃">已废弃</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="idea-priority">优先级</label>
+                        <select id="idea-priority">
+                            <option value="低">低</option>
+                            <option value="中" selected>中</option>
+                            <option value="高">高</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="idea-id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="modal-cancel">取消</button>
+                <button type="button" class="btn-primary" id="modal-save">保存</button>
+                <button type="button" class="btn-danger" id="modal-delete" style="display: none;">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../shared/scripts/common.js"></script>
+    <script src="./script.js"></script>
+</body>
+</html>
+

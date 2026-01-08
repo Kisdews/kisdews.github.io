@@ -7,23 +7,40 @@
     <link rel="stylesheet" href="./shared/styles/common.css">
     <link rel="stylesheet" href="./index.css">
 </head>
-<body>
+<body class="home-page">
     <header>
-        <h1>Kisdews</h1>
+        <h1><a href="./">Kisdews</a></h1>
     </header>
     
-    <nav>
-        <a href="./">Home</a>
-        <a href="./games/">Games</a>
-        <a href="./blogs/">Blogs</a>
-    </nav>
-    
-    <main>
-        <section>
+    <main class="home-main">
+        <section class="welcome-section">
             <h2>你好！</h2>
             <p>这是我的个人网站，我会在这里分享我的项目和想法。</p>
-            <p id="days-counter-1">正在计算天数...</p>
-            <p id="days-counter-2">正在计算天数...</p>
+            <div class="days-counters">
+                <p id="days-counter-1">正在计算天数...</p>
+                <p id="days-counter-2">正在计算天数...</p>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <h2>功能入口</h2>
+            <div class="features-grid">
+                <a href="./games/" class="feature-card">
+                    <div class="feature-icon">🎮</div>
+                    <h3>Games</h3>
+                    <p>游戏项目展示</p>
+                </a>
+                <a href="./blogs/" class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>Blogs</h3>
+                    <p>博客文章</p>
+                </a>
+                <a href="./design/" class="feature-card">
+                    <div class="feature-icon">💡</div>
+                    <h3>Design</h3>
+                    <p>游戏设计灵感</p>
+                </a>
+            </div>
         </section>
     </main>
     

@@ -19,23 +19,40 @@ header h1 {
     margin: 0;
 }
 
+header h1 a {
+    color: white;
+    text-decoration: none;
+    transition: opacity 0.3s ease;
+    display: inline-block;
+}
+
+header h1 a:hover {
+    opacity: 0.8;
+    cursor: pointer;
+}
+
 /* 导航栏样式 */
 nav {
-    display: flex;
-    justify-content: center;
-    background: #34495e;
-    padding: 0.5rem 0;
+    display: none; /* 默认隐藏导航栏 */
 }
 
 nav a {
     color: white;
     text-decoration: none;
-    padding: 0 5rem;
+    padding: 0.5rem 2rem;
     transition: opacity 0.3s ease;
+    display: inline-block;
 }
 
 nav a:hover {
     opacity: 0.8;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+/* 主页不显示导航栏 - 通过类名控制 */
+body.home-page nav {
+    display: none;
 }
 
 /* 主内容区域 */
