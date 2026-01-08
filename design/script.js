@@ -120,8 +120,9 @@ class DesignIdeasManager {
 
     // 保存游戏数据（只保存到本地，不自动同步到服务器）
     async saveGames() {
-        // 只保存到本地，快速响应
+        // 只保存到本地，快速响应（不调用 GitHub API）
         this.saveGamesToLocal();
+        console.log('游戏数据已保存到本地（未同步到服务器）');
         return true;
     }
 
@@ -156,10 +157,88 @@ class DesignIdeasManager {
         }
     }
 
+    // 同步所有数据到服务器
+    async syncAllToServer() {
+        const hasToken = window.authManager?.hasToken();
+        
+        if (!hasToken) {
+            alert('未配置 GitHub Token，无法同步。请返回首页配置 Token。');
+            return;
+        }
+
+        const syncBtn = document.getElementById('sync-to-server-btn');
+        if (syncBtn) {
+            syncBtn.disabled = true;
+            syncBtn.textContent = '同步中...';
+        }
+
+        try {
+            // 同步所有数据
+            await Promise.all([
+                this.syncGamesToServer(),
+                this.syncIdeasToServer(),
+                this.syncGamesOrderToServer(),
+                this.syncIdeasOrderToServer()
+            ]);
+            
+            alert('数据已成功同步到服务器！');
+        } catch (error) {
+            console.error('同步失败:', error);
+        } finally {
+            if (syncBtn) {
+                syncBtn.disabled = false;
+                syncBtn.textContent = '🔄 同步到服务器';
+            }
+        }
+    }
+
+    // 同步游戏顺序到服务器
+    async syncGamesOrderToServer() {
+        const hasToken = window.authManager?.hasToken();
+        if (!hasToken || !window.githubAPI) return;
+
+        const container = document.getElementById('games-container');
+        if (!container) return;
+
+        const order = Array.from(container.querySelectorAll('.game-card')).map(
+            card => card.dataset.gameId
+        ).filter(Boolean);
+
+        if (order.length === 0) return;
+
+        try {
+            await window.githubAPI.saveGamesOrder(order);
+        } catch (error) {
+            console.error('同步游戏顺序失败:', error);
+        }
+    }
+
+    // 同步想法顺序到服务器
+    async syncIdeasOrderToServer() {
+        const hasToken = window.authManager?.hasToken();
+        if (!hasToken || !window.githubAPI || !this.currentGameId) return;
+
+        const container = document.getElementById('ideas-container');
+        if (!container) return;
+
+        const order = Array.from(container.querySelectorAll('.idea-card')).map(
+            card => card.dataset.ideaId
+        ).filter(Boolean);
+
+        if (order.length === 0) return;
+
+        try {
+            await window.githubAPI.saveIdeasOrder(this.currentGameId, order);
+        } catch (error) {
+            console.error('同步想法顺序失败:', error);
+        }
+    }
+
     // 保存想法数据（只保存到本地，不自动同步到服务器）
     async saveIdeas() {
-        // 只保存到本地，快速响应
+        // 只保存到本地，快速响应（不调用 GitHub API）
         this.saveIdeasToLocal();
+        console.log('想法数据已保存到本地（未同步到服务器）');
         return true;
     }
 
