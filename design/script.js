@@ -868,10 +868,9 @@ class DesignIdeasManager {
         const key = `${this.ideasOrderKey}-${this.currentGameId}`;
         localStorage.setItem(key, JSON.stringify(order));
         
-        // 如果登录且有 token，保存到 GitHub
-        const isLoggedIn = window.authManager?.isLoggedIn();
-        const hasToken = window.authManager?.hasGitHubToken();
-        if (isLoggedIn && hasToken && window.githubAPI && this.currentGameId) {
+        // 如果有 token，保存到 GitHub
+        const hasToken = window.authManager?.hasToken();
+        if (hasToken && window.githubAPI && this.currentGameId) {
             try {
                 await window.githubAPI.saveIdeasOrder(this.currentGameId, order);
             } catch (error) {
