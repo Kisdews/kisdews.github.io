@@ -40,37 +40,10 @@
                 <p id="days-counter-2">正在计算天数...</p>
             </div>
             <div class="auth-controls">
-                <button id="token-status-btn" class="btn-primary">配置 Token</button>
-                <button id="settings-btn" class="btn-secondary">⚙️ 设置</button>
+                <button id="settings-btn" class="btn-primary">⚙️ 设置</button>
             </div>
         </section>
     </main>
-
-    <!-- Token 配置弹窗 -->
-    <div id="token-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>配置 GitHub Token</h3>
-                <button class="modal-close" id="token-modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="token-form">
-                    <div class="form-group">
-                        <label for="github-token">GitHub Personal Access Token</label>
-                        <input type="password" id="github-token" placeholder="输入 GitHub Personal Access Token">
-                        <small style="color: #666; font-size: 0.85rem;">
-                            配置 Token 后即可编辑内容并同步到 GitHub。未配置时只能查看。
-                            <br>获取方式：GitHub Settings → Developer settings → Personal access tokens
-                        </small>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" id="token-modal-cancel">取消</button>
-                <button type="button" class="btn-primary" id="token-modal-save">保存</button>
-            </div>
-        </div>
-    </div>
 
     <!-- 设置弹窗 -->
     <div id="settings-modal" class="modal">
@@ -81,14 +54,15 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>登录状态</label>
-                    <p id="settings-login-status">未登录</p>
+                    <label>Token 状态</label>
+                    <p id="settings-token-status">未配置</p>
                 </div>
                 <div class="form-group">
-                    <label for="settings-github-token">GitHub Token</label>
+                    <label for="settings-github-token">GitHub Personal Access Token</label>
                     <input type="password" id="settings-github-token" placeholder="输入 GitHub Personal Access Token">
                     <small style="color: #666; font-size: 0.85rem;">
-                        用于将数据同步到 GitHub。获取方式：GitHub Settings → Developer settings → Personal access tokens
+                        配置 Token 后即可编辑内容并同步到 GitHub。未配置时只能查看。
+                        <br>获取方式：GitHub Settings → Developer settings → Personal access tokens
                     </small>
                 </div>
                 <div class="form-group">

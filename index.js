@@ -39,64 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initAuthSystem();
 });
 
-// 初始化 Token 配置系统
+// 初始化设置系统
 function initAuthSystem() {
-    // 更新 Token 状态显示
-    updateTokenStatus();
-
-    // Token 状态按钮
-    const tokenStatusBtn = document.getElementById('token-status-btn');
-    if (tokenStatusBtn) {
-        tokenStatusBtn.addEventListener('click', () => {
-            if (window.authManager?.hasToken()) {
-                if (confirm('确定要移除 Token 吗？移除后将无法编辑内容。')) {
-                    window.authManager.removeToken();
-                    updateTokenStatus();
-                    alert('Token 已移除');
-                }
-            } else {
-                openTokenModal();
-            }
-        });
-    }
-
     // 设置按钮
     const settingsBtn = document.getElementById('settings-btn');
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
             openSettingsModal();
-        });
-    }
-
-    // Token 配置弹窗事件
-    const tokenModal = document.getElementById('token-modal');
-    const tokenModalClose = document.getElementById('token-modal-close');
-    const tokenModalCancel = document.getElementById('token-modal-cancel');
-    const tokenModalSave = document.getElementById('token-modal-save');
-
-    if (tokenModalClose) {
-        tokenModalClose.addEventListener('click', () => {
-            closeTokenModal();
-        });
-    }
-
-    if (tokenModalCancel) {
-        tokenModalCancel.addEventListener('click', () => {
-            closeTokenModal();
-        });
-    }
-
-    if (tokenModalSave) {
-        tokenModalSave.addEventListener('click', () => {
-            handleTokenSave();
-        });
-    }
-
-    if (tokenModal) {
-        tokenModal.addEventListener('click', (e) => {
-            if (e.target.id === 'token-modal') {
-                closeTokenModal();
-            }
         });
     }
 
@@ -158,62 +107,13 @@ function initAuthSystem() {
     }
 }
 
-// 更新 Token 状态显示
-function updateTokenStatus() {
-    const tokenStatusBtn = document.getElementById('token-status-btn');
-    if (tokenStatusBtn) {
-        const hasToken = window.authManager?.hasToken() || false;
-        if (hasToken) {
-            tokenStatusBtn.textContent = '已配置 | 移除';
-        } else {
-            tokenStatusBtn.textContent = '配置 Token';
-        }
-    }
-}
-
-// 打开 Token 配置弹窗
-function openTokenModal() {
-    const modal = document.getElementById('token-modal');
-    if (modal) {
-        document.getElementById('github-token').value = window.authManager?.getGitHubToken() || '';
-        modal.classList.add('active');
-    }
-}
-
-// 关闭 Token 配置弹窗
-function closeTokenModal() {
-    const modal = document.getElementById('token-modal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-}
-
-// 处理 Token 保存
-function handleTokenSave() {
-    const token = document.getElementById('github-token').value.trim();
-
-    if (!token) {
-        if (confirm('未输入 Token，将移除现有配置。确定继续吗？')) {
-            window.authManager.removeToken();
-            closeTokenModal();
-            updateTokenStatus();
-            alert('Token 已移除');
-        }
-        return;
-    }
-
-    window.authManager.setGitHubToken(token);
-    closeTokenModal();
-    updateTokenStatus();
-    alert('Token 已保存！现在可以编辑内容了。');
-}
 
 // 打开设置弹窗
 function openSettingsModal() {
     const modal = document.getElementById('settings-modal');
     if (modal) {
         const hasToken = window.authManager?.hasToken() || false;
-        document.getElementById('settings-login-status').textContent = hasToken ? '已配置 Token' : '未配置 Token';
+        document.getElementById('settings-token-status').textContent = hasToken ? '已配置' : '未配置';
         document.getElementById('settings-github-token').value = window.authManager?.getGitHubToken() || '';
         
         // 加载 GitHub 仓库配置
@@ -238,7 +138,17 @@ function closeSettingsModal() {
 // 保存设置
 function saveSettings() {
     const token = document.getElementById('settings-github-token').value.trim();
-    window.authManager.setGitHubToken(token);
+    
+    // 保存或移除 Token
+    if (token) {
+        window.authManager.setGitHubToken(token);
+    } else {
+        if (window.authManager?.hasToken() && confirm('确定要移除 Token 吗？移除后将无法编辑内容。')) {
+            window.authManager.removeToken();
+        } else {
+            return; // 用户取消
+        }
+    }
     
     // 保存 GitHub 仓库配置
     if (window.githubAPI) {
@@ -254,7 +164,11 @@ function saveSettings() {
     }
     
     closeSettingsModal();
-    alert('设置已保存，请刷新页面使配置生效');
+    if (token) {
+        alert('设置已保存！现在可以编辑内容了。');
+    } else {
+        alert('Token 已移除。');
+    }
 }
 
 // 导出配置
@@ -330,8 +244,7 @@ function importConfig(file) {
 }
 
 // 全局函数：供其他页面调用
-window.openTokenModal = openTokenModal;
-window.updateTokenStatus = updateTokenStatus;
+window.openSettingsModal = openSettingsModal;
 
 // 初始化功能入口拖动排序
 function initFeaturesDragSort() {
