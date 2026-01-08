@@ -6,22 +6,27 @@ class DesignIdeasManager {
     constructor() {
         this.gamesStorageKey = 'design-games';
         this.ideasStorageKey = 'design-ideas';
-        this.games = this.loadGames();
-        this.ideas = this.loadIdeas();
+        this.gamesOrderKey = 'design-games-order';
+        this.ideasOrderKey = 'design-ideas-order';
+        this.games = [];
+        this.ideas = [];
         this.currentGameId = this.getGameIdFromURL();
         this.filteredIdeas = [];
         this.currentFilter = {
             tag: '',
             search: ''
         };
+        this.isLoading = false;
 
         this.init();
     }
 
-    init() {
+    async init() {
         this.initEventListeners();
+        await this.loadAllData();
         this.updateGameSelects();
-        this.render();
+        await this.render();
+        this.updateUIForAuth();
     }
 
     // 从URL获取游戏ID
@@ -41,44 +46,145 @@ class DesignIdeasManager {
         window.history.pushState({ gameId }, '', url);
     }
 
-    // 加载游戏数据
-    loadGames() {
+    // 加载所有数据（优先从 GitHub 读取）
+    async loadAllData() {
+        this.isLoading = true;
+        try {
+            // 尝试从 GitHub 读取
+            if (window.githubAPI) {
+                const [games, ideas] = await Promise.all([
+                    window.githubAPI.loadGames(),
+                    window.githubAPI.loadIdeas()
+                ]);
+                
+                if (games !== null) {
+                    this.games = games;
+                } else {
+                    // GitHub 没有数据，从 localStorage 读取
+                    this.games = this.loadGamesFromLocal();
+                }
+                
+                if (ideas !== null) {
+                    this.ideas = ideas;
+                } else {
+                    // GitHub 没有数据，从 localStorage 读取
+                    this.ideas = this.loadIdeasFromLocal();
+                }
+            } else {
+                // 如果没有 GitHub API，从 localStorage 读取
+                this.games = this.loadGamesFromLocal();
+                this.ideas = this.loadIdeasFromLocal();
+            }
+        } catch (error) {
+            console.error('加载数据失败，使用本地数据:', error);
+            // 失败时使用本地数据
+            this.games = this.loadGamesFromLocal();
+            this.ideas = this.loadIdeasFromLocal();
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // 从 localStorage 加载游戏数据
+    loadGamesFromLocal() {
         try {
             const data = localStorage.getItem(this.gamesStorageKey);
             return data ? JSON.parse(data) : [];
         } catch (error) {
-            console.error('加载游戏数据失败:', error);
+            console.error('加载本地游戏数据失败:', error);
+            return [];
+        }
+    }
+
+    // 从 localStorage 加载想法数据
+    loadIdeasFromLocal() {
+        try {
+            const data = localStorage.getItem(this.ideasStorageKey);
+            return data ? JSON.parse(data) : [];
+        } catch (error) {
+            console.error('加载本地想法数据失败:', error);
             return [];
         }
     }
 
     // 保存游戏数据
-    saveGames() {
+    async saveGames() {
+        const isLoggedIn = window.authManager?.isLoggedIn();
+        const hasToken = window.authManager?.hasGitHubToken();
+        
+        if (isLoggedIn && hasToken && window.githubAPI) {
+            // 登录且有 token，保存到 GitHub
+            try {
+                await window.githubAPI.saveGames(this.games);
+                // 同时保存到本地作为备份
+                this.saveGamesToLocal();
+                return true;
+            } catch (error) {
+                console.error('保存到 GitHub 失败:', error);
+                alert('保存到服务器失败，已保存到本地。请检查 GitHub Token 是否正确。');
+                // 失败时保存到本地
+                this.saveGamesToLocal();
+                return false;
+            }
+        } else {
+            // 未登录或没有 token，只保存到本地
+            this.saveGamesToLocal();
+            if (!isLoggedIn) {
+                alert('您未登录，数据仅保存在本地。登录后可同步到服务器。');
+            } else if (!hasToken) {
+                alert('未配置 GitHub Token，数据仅保存在本地。请在设置中配置 Token。');
+            }
+            return false;
+        }
+    }
+
+    // 保存到本地
+    saveGamesToLocal() {
         try {
             localStorage.setItem(this.gamesStorageKey, JSON.stringify(this.games));
         } catch (error) {
-            console.error('保存游戏数据失败:', error);
+            console.error('保存本地游戏数据失败:', error);
             alert('保存失败，请检查浏览器存储空间');
         }
     }
 
-    // 加载想法数据
-    loadIdeas() {
-        try {
-            const data = localStorage.getItem(this.ideasStorageKey);
-            return data ? JSON.parse(data) : [];
-        } catch (error) {
-            console.error('加载想法数据失败:', error);
-            return [];
+    // 保存想法数据
+    async saveIdeas() {
+        const isLoggedIn = window.authManager?.isLoggedIn();
+        const hasToken = window.authManager?.hasGitHubToken();
+        
+        if (isLoggedIn && hasToken && window.githubAPI) {
+            // 登录且有 token，保存到 GitHub
+            try {
+                await window.githubAPI.saveIdeas(this.ideas);
+                // 同时保存到本地作为备份
+                this.saveIdeasToLocal();
+                return true;
+            } catch (error) {
+                console.error('保存到 GitHub 失败:', error);
+                alert('保存到服务器失败，已保存到本地。请检查 GitHub Token 是否正确。');
+                // 失败时保存到本地
+                this.saveIdeasToLocal();
+                return false;
+            }
+        } else {
+            // 未登录或没有 token，只保存到本地
+            this.saveIdeasToLocal();
+            if (!isLoggedIn) {
+                alert('您未登录，数据仅保存在本地。登录后可同步到服务器。');
+            } else if (!hasToken) {
+                alert('未配置 GitHub Token，数据仅保存在本地。请在设置中配置 Token。');
+            }
+            return false;
         }
     }
 
-    // 保存想法数据
-    saveIdeas() {
+    // 保存到本地
+    saveIdeasToLocal() {
         try {
             localStorage.setItem(this.ideasStorageKey, JSON.stringify(this.ideas));
         } catch (error) {
-            console.error('保存想法数据失败:', error);
+            console.error('保存本地想法数据失败:', error);
             alert('保存失败，请检查浏览器存储空间');
         }
     }
@@ -114,19 +220,19 @@ class DesignIdeasManager {
     }
 
     // 渲染主视图
-    render() {
+    async render() {
         if (this.currentGameId) {
-            this.showGameView();
+            await this.showGameView();
         } else {
-            this.showGamesView();
+            await this.showGamesView();
         }
     }
 
     // 显示游戏列表视图
-    showGamesView() {
+    async showGamesView() {
         document.getElementById('games-view').style.display = 'block';
         document.getElementById('game-view').style.display = 'none';
-        this.renderGames();
+        await this.renderGames();
     }
 
     // 显示游戏详情视图
@@ -143,8 +249,38 @@ class DesignIdeasManager {
         this.applyFilters();
     }
 
+    // 更新 UI 权限控制
+    updateUIForAuth() {
+        const isLoggedIn = window.authManager?.isLoggedIn() || false;
+        
+        // 控制编辑按钮显示
+        const newGameBtn = document.getElementById('new-game-btn');
+        const newIdeaBtn = document.getElementById('new-idea-btn');
+        const editButtons = document.querySelectorAll('.game-card-action-btn');
+        
+        if (isLoggedIn) {
+            // 已登录，显示所有编辑功能
+            if (newGameBtn) newGameBtn.style.display = 'inline-block';
+            if (newIdeaBtn) newIdeaBtn.style.display = 'inline-block';
+            editButtons.forEach(btn => btn.style.display = 'flex');
+        } else {
+            // 未登录，隐藏编辑功能
+            if (newGameBtn) newGameBtn.style.display = 'none';
+            if (newIdeaBtn) newIdeaBtn.style.display = 'none';
+            editButtons.forEach(btn => btn.style.display = 'none');
+        }
+        
+        // 更新登录状态显示
+        this.updateLoginStatus();
+    }
+
+    // 更新登录状态显示（已移至首页，此方法保留用于兼容）
+    updateLoginStatus() {
+        // 登录功能已移至首页，此方法不再需要
+    }
+
     // 渲染游戏列表
-    renderGames() {
+    async renderGames() {
         const container = document.getElementById('games-container');
         
         if (this.games.length === 0) {
@@ -152,11 +288,14 @@ class DesignIdeasManager {
             return;
         }
 
+        // 按保存的顺序排序
+        const orderedGames = await this.getOrderedGames();
+
         let html = '';
-        this.games.forEach(game => {
+        orderedGames.forEach(game => {
             const ideasCount = this.getGameIdeasCount(game.id);
             html += `
-                <div class="game-card" data-game-id="${game.id}">
+                <div class="game-card" draggable="true" data-game-id="${game.id}">
                     <div class="game-card-actions">
                         <button class="game-card-action-btn edit-btn" data-action="edit" data-game-id="${game.id}" title="编辑游戏">✏️</button>
                         <button class="game-card-action-btn delete-btn" data-action="delete" data-game-id="${game.id}" title="删除游戏">🗑️</button>
@@ -198,25 +337,166 @@ class DesignIdeasManager {
                     const game = this.games.find(g => g.id === gameId);
                     const ideasCount = this.getGameIdeasCount(gameId);
                     if (confirm(`确定要删除游戏"${game.name}"吗？\n删除后该游戏下的 ${ideasCount} 个想法也将被删除！`)) {
-                        this.deleteGameById(gameId);
+                        await this.deleteGameById(gameId);
                     }
+                }
+            });
+        });
+
+        // 初始化拖动排序
+        this.initGamesDragSort();
+    }
+
+    // 获取有序的游戏列表
+    async getOrderedGames() {
+        const savedOrder = await this.loadGamesOrder();
+        if (!savedOrder || savedOrder.length === 0) {
+            return [...this.games];
+        }
+
+        // 按保存的顺序排序
+        const ordered = savedOrder.map(id => 
+            this.games.find(g => g.id === id)
+        ).filter(Boolean);
+
+        // 添加新游戏（不在顺序中的）
+        this.games.forEach(game => {
+            if (!savedOrder.includes(game.id)) {
+                ordered.push(game);
+            }
+        });
+
+        return ordered;
+    }
+
+    // 初始化游戏拖动排序
+    initGamesDragSort() {
+        const container = document.getElementById('games-container');
+        if (!container) return;
+
+        const cards = container.querySelectorAll('.game-card');
+        let draggedElement = null;
+
+        cards.forEach(card => {
+            card.addEventListener('dragstart', (e) => {
+                draggedElement = card;
+                card.style.opacity = '0.5';
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            card.addEventListener('dragend', () => {
+                card.style.opacity = '1';
+                container.querySelectorAll('.game-card').forEach(c => {
+                    c.classList.remove('drag-over');
+                });
+            });
+
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                
+                if (draggedElement && draggedElement !== card) {
+                    const rect = card.getBoundingClientRect();
+                    const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                    
+                    container.querySelectorAll('.game-card').forEach(c => {
+                        c.classList.remove('drag-over');
+                    });
+                    card.classList.add('drag-over');
+                }
+            });
+
+            card.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                if (draggedElement && draggedElement !== card) {
+                    card.classList.add('drag-over');
+                }
+            });
+
+            card.addEventListener('dragleave', () => {
+                card.classList.remove('drag-over');
+            });
+
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                card.classList.remove('drag-over');
+
+                if (draggedElement && draggedElement !== card) {
+                    const rect = card.getBoundingClientRect();
+                    const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                    
+                    if (next) {
+                        container.insertBefore(draggedElement, card.nextSibling);
+                    } else {
+                        container.insertBefore(draggedElement, card);
+                    }
+                    
+                    this.saveGamesOrder();
                 }
             });
         });
     }
 
+    // 保存游戏顺序
+    async saveGamesOrder() {
+        const container = document.getElementById('games-container');
+        if (!container) return;
+
+        const order = Array.from(container.querySelectorAll('.game-card')).map(
+            card => card.dataset.gameId
+        );
+        
+        // 保存到本地
+        localStorage.setItem(this.gamesOrderKey, JSON.stringify(order));
+        
+        // 如果登录且有 token，保存到 GitHub
+        const isLoggedIn = window.authManager?.isLoggedIn();
+        const hasToken = window.authManager?.hasGitHubToken();
+        if (isLoggedIn && hasToken && window.githubAPI) {
+            try {
+                await window.githubAPI.saveGamesOrder(order);
+            } catch (error) {
+                console.error('保存游戏顺序到 GitHub 失败:', error);
+            }
+        }
+    }
+
+    // 加载游戏顺序
+    async loadGamesOrder() {
+        // 优先从 GitHub 读取
+        if (window.githubAPI) {
+            try {
+                const order = await window.githubAPI.loadGamesOrder();
+                if (order !== null) {
+                    return order;
+                }
+            } catch (error) {
+                console.error('从 GitHub 加载游戏顺序失败:', error);
+            }
+        }
+        
+        // 从本地读取
+        try {
+            const order = localStorage.getItem(this.gamesOrderKey);
+            return order ? JSON.parse(order) : null;
+        } catch (error) {
+            console.error('加载本地游戏顺序失败:', error);
+            return null;
+        }
+    }
+
     // 导航到游戏页面
-    navigateToGame(gameId) {
+    async navigateToGame(gameId) {
         this.currentGameId = gameId;
         this.updateURL(gameId);
-        this.render();
+        await this.render();
     }
 
     // 返回游戏列表
-    goBack() {
+    async goBack() {
         this.currentGameId = '';
         this.updateURL('');
-        this.render();
+        await this.render();
     }
 
     // 初始化事件监听
@@ -225,6 +505,10 @@ class DesignIdeasManager {
         const newGameBtn = document.getElementById('new-game-btn');
         if (newGameBtn) {
             newGameBtn.addEventListener('click', () => {
+                if (!window.authManager?.isLoggedIn()) {
+                    alert('请先登录以编辑内容。请返回首页进行登录。');
+                    return;
+                }
                 this.openGameModal();
             });
         }
@@ -241,6 +525,10 @@ class DesignIdeasManager {
         const newIdeaBtn = document.getElementById('new-idea-btn');
         if (newIdeaBtn) {
             newIdeaBtn.addEventListener('click', () => {
+                if (!window.authManager?.isLoggedIn()) {
+                    alert('请先登录以编辑内容。请返回首页进行登录。');
+                    return;
+                }
                 if (this.games.length === 0) {
                     alert('请先创建游戏项目！');
                     this.openGameModal();
@@ -303,16 +591,16 @@ class DesignIdeasManager {
 
         const gameModalSave = document.getElementById('game-modal-save');
         if (gameModalSave) {
-            gameModalSave.addEventListener('click', () => {
-                this.saveGame();
+            gameModalSave.addEventListener('click', async () => {
+                await this.saveGame();
             });
         }
 
         const gameModalDelete = document.getElementById('game-modal-delete');
         if (gameModalDelete) {
-            gameModalDelete.addEventListener('click', () => {
+            gameModalDelete.addEventListener('click', async () => {
                 if (confirm('确定要删除这个游戏吗？删除后该游戏下的所有想法也将被删除！')) {
-                    this.deleteGame();
+                    await this.deleteGame();
                 }
             });
         }
@@ -343,16 +631,16 @@ class DesignIdeasManager {
 
         const modalSave = document.getElementById('modal-save');
         if (modalSave) {
-            modalSave.addEventListener('click', () => {
-                this.saveIdea();
+            modalSave.addEventListener('click', async () => {
+                await this.saveIdea();
             });
         }
 
         const modalDelete = document.getElementById('modal-delete');
         if (modalDelete) {
-            modalDelete.addEventListener('click', () => {
+            modalDelete.addEventListener('click', async () => {
                 if (confirm('确定要删除这个想法吗？')) {
-                    this.deleteIdea();
+                    await this.deleteIdea();
                 }
             });
         }
@@ -367,11 +655,13 @@ class DesignIdeasManager {
         }
 
         // 浏览器前进后退
-        window.addEventListener('popstate', (e) => {
+        window.addEventListener('popstate', async (e) => {
             this.currentGameId = this.getGameIdFromURL();
-            this.render();
+            await this.render();
         });
+
     }
+
 
     // 初始化筛选器选项
     initFilters() {
@@ -438,7 +728,7 @@ class DesignIdeasManager {
     }
 
     // 渲染想法卡片
-    renderIdeas() {
+    async renderIdeas() {
         const container = document.getElementById('ideas-container');
         if (!container) return;
         
@@ -447,8 +737,11 @@ class DesignIdeasManager {
             return;
         }
 
+        // 按保存的顺序排序
+        const orderedIdeas = await this.getOrderedIdeas();
+
         let html = '';
-        this.filteredIdeas.forEach(idea => {
+        orderedIdeas.forEach(idea => {
             html += this.renderIdeaCard(idea);
         });
 
@@ -461,6 +754,151 @@ class DesignIdeasManager {
                 this.openIdeaModal(ideaId);
             });
         });
+
+        // 初始化拖动排序
+        this.initIdeasDragSort();
+    }
+
+    // 获取有序的想法列表
+    async getOrderedIdeas() {
+        const savedOrder = await this.loadIdeasOrder();
+        if (!savedOrder || savedOrder.length === 0) {
+            return [...this.filteredIdeas];
+        }
+
+        // 按保存的顺序排序
+        const ordered = savedOrder.map(id => 
+            this.filteredIdeas.find(i => i.id === id)
+        ).filter(Boolean);
+
+        // 添加新想法（不在顺序中的）
+        this.filteredIdeas.forEach(idea => {
+            if (!savedOrder.includes(idea.id)) {
+                ordered.push(idea);
+            }
+        });
+
+        return ordered;
+    }
+
+    // 初始化想法拖动排序
+    initIdeasDragSort() {
+        const container = document.getElementById('ideas-container');
+        if (!container) return;
+
+        const cards = container.querySelectorAll('.idea-card');
+        let draggedElement = null;
+
+        cards.forEach(card => {
+            card.setAttribute('draggable', 'true');
+            
+            card.addEventListener('dragstart', (e) => {
+                draggedElement = card;
+                card.style.opacity = '0.5';
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            card.addEventListener('dragend', () => {
+                card.style.opacity = '1';
+                container.querySelectorAll('.idea-card').forEach(c => {
+                    c.classList.remove('drag-over');
+                });
+            });
+
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                
+                if (draggedElement && draggedElement !== card) {
+                    const rect = card.getBoundingClientRect();
+                    const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                    
+                    container.querySelectorAll('.idea-card').forEach(c => {
+                        c.classList.remove('drag-over');
+                    });
+                    card.classList.add('drag-over');
+                }
+            });
+
+            card.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                if (draggedElement && draggedElement !== card) {
+                    card.classList.add('drag-over');
+                }
+            });
+
+            card.addEventListener('dragleave', () => {
+                card.classList.remove('drag-over');
+            });
+
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                card.classList.remove('drag-over');
+
+                if (draggedElement && draggedElement !== card) {
+                    const rect = card.getBoundingClientRect();
+                    const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                    
+                    if (next) {
+                        container.insertBefore(draggedElement, card.nextSibling);
+                    } else {
+                        container.insertBefore(draggedElement, card);
+                    }
+                    
+                    this.saveIdeasOrder();
+                }
+            });
+        });
+    }
+
+    // 保存想法顺序
+    async saveIdeasOrder() {
+        const container = document.getElementById('ideas-container');
+        if (!container) return;
+
+        const order = Array.from(container.querySelectorAll('.idea-card')).map(
+            card => card.dataset.ideaId
+        );
+        
+        // 保存到本地
+        const key = `${this.ideasOrderKey}-${this.currentGameId}`;
+        localStorage.setItem(key, JSON.stringify(order));
+        
+        // 如果登录且有 token，保存到 GitHub
+        const isLoggedIn = window.authManager?.isLoggedIn();
+        const hasToken = window.authManager?.hasGitHubToken();
+        if (isLoggedIn && hasToken && window.githubAPI && this.currentGameId) {
+            try {
+                await window.githubAPI.saveIdeasOrder(this.currentGameId, order);
+            } catch (error) {
+                console.error('保存想法顺序到 GitHub 失败:', error);
+            }
+        }
+    }
+
+    // 加载想法顺序
+    async loadIdeasOrder() {
+        // 优先从 GitHub 读取
+        if (window.githubAPI && this.currentGameId) {
+            try {
+                const order = await window.githubAPI.loadIdeasOrder(this.currentGameId);
+                if (order !== null) {
+                    return order;
+                }
+            } catch (error) {
+                console.error('从 GitHub 加载想法顺序失败:', error);
+            }
+        }
+        
+        // 从本地读取
+        try {
+            const key = `${this.ideasOrderKey}-${this.currentGameId}`;
+            const order = localStorage.getItem(key);
+            return order ? JSON.parse(order) : null;
+        } catch (error) {
+            console.error('加载本地想法顺序失败:', error);
+            return null;
+        }
     }
 
     // 渲染单个想法卡片
@@ -524,7 +962,7 @@ class DesignIdeasManager {
     }
 
     // 保存游戏
-    saveGame() {
+    async saveGame() {
         const form = document.getElementById('game-form');
         if (!form.checkValidity()) {
             form.reportValidity();
@@ -562,14 +1000,15 @@ class DesignIdeasManager {
             this.games.push(game);
         }
 
-        this.saveGames();
+        await this.saveGames();
+        await this.saveGamesOrder(); // 更新顺序
         this.updateGameSelects();
-        this.render();
+        await this.render();
         this.closeGameModal();
     }
 
     // 删除游戏（从弹窗）
-    deleteGame() {
+    async deleteGame() {
         const gameId = document.getElementById('game-id').value;
         if (!gameId) return;
         this.deleteGameById(gameId);
@@ -577,23 +1016,24 @@ class DesignIdeasManager {
     }
 
     // 删除游戏（通过ID）
-    deleteGameById(gameId) {
+    async deleteGameById(gameId) {
         if (!gameId) return;
 
         // 删除游戏下的所有想法
         this.ideas = this.ideas.filter(i => i.gameId !== gameId);
-        this.saveIdeas();
+        await this.saveIdeas();
 
         // 删除游戏
         this.games = this.games.filter(g => g.id !== gameId);
-        this.saveGames();
+        await this.saveGames();
+        await this.saveGamesOrder(); // 更新顺序
 
         // 如果删除的是当前查看的游戏，返回列表
         if (this.currentGameId === gameId) {
             this.goBack();
         } else {
             this.updateGameSelects();
-            this.render();
+            await this.render();
         }
     }
 
@@ -651,7 +1091,7 @@ class DesignIdeasManager {
     }
 
     // 保存想法
-    saveIdea() {
+    async saveIdea() {
         const form = document.getElementById('idea-form');
         if (!form.checkValidity()) {
             form.reportValidity();
@@ -694,18 +1134,20 @@ class DesignIdeasManager {
         }
 
         this.saveIdeas();
+        this.saveIdeasOrder(); // 更新顺序
         this.initFilters();
         this.applyFilters();
         this.closeIdeaModal();
     }
 
     // 删除想法
-    deleteIdea() {
+    async deleteIdea() {
         const ideaId = document.getElementById('idea-id').value;
         if (!ideaId) return;
 
         this.ideas = this.ideas.filter(i => i.id !== ideaId);
-        this.saveIdeas();
+        await this.saveIdeas();
+        await this.saveIdeasOrder(); // 更新顺序
         this.initFilters();
         this.applyFilters();
         this.closeIdeaModal();
@@ -745,7 +1187,16 @@ class DesignIdeasManager {
     }
 }
 
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-    new DesignIdeasManager();
+    // 初始化全局认证和 GitHub API 对象（如果尚未初始化）
+    if (!window.authManager && typeof AuthManager !== 'undefined') {
+        window.authManager = new AuthManager();
+    }
+    if (!window.githubAPI && typeof GitHubAPI !== 'undefined') {
+        window.githubAPI = new GitHubAPI();
+    }
+    
+    window.designIdeasManager = new DesignIdeasManager();
 });

@@ -13,42 +13,117 @@
     </header>
     
     <main class="home-main">
-        <section class="welcome-section">
-            <h2>你好！</h2>
-            <p>这是我的个人网站，我会在这里分享我的项目和想法。</p>
-            <div class="days-counters">
-                <p id="days-counter-1">正在计算天数...</p>
-                <p id="days-counter-2">正在计算天数...</p>
-            </div>
-        </section>
-
         <section class="features-section">
             <h2>功能入口</h2>
-            <div class="features-grid">
-                <a href="./games/" class="feature-card">
+            <div class="features-grid" id="features-grid">
+                <a href="./games/" class="feature-card" draggable="true" data-feature="games">
                     <div class="feature-icon">🎮</div>
                     <h3>Games</h3>
                     <p>游戏项目展示</p>
                 </a>
-                <a href="./blogs/" class="feature-card">
+                <a href="./blogs/" class="feature-card" draggable="true" data-feature="blogs">
                     <div class="feature-icon">📝</div>
                     <h3>Blogs</h3>
                     <p>博客文章</p>
                 </a>
-                <a href="./design/" class="feature-card">
+                <a href="./design/" class="feature-card" draggable="true" data-feature="design">
                     <div class="feature-icon">💡</div>
                     <h3>Design</h3>
                     <p>游戏设计灵感</p>
                 </a>
             </div>
         </section>
+
+        <section class="welcome-section">
+            <div class="days-counters">
+                <p id="days-counter-1">正在计算天数...</p>
+                <p id="days-counter-2">正在计算天数...</p>
+            </div>
+            <div class="auth-controls">
+                <button id="login-status-btn" class="btn-primary">登录</button>
+                <button id="settings-btn" class="btn-secondary">⚙️ 设置</button>
+            </div>
+        </section>
     </main>
+
+    <!-- 登录弹窗 -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>管理员登录</h3>
+                <button class="modal-close" id="login-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-password">管理员密码</label>
+                        <input type="password" id="login-password" placeholder="输入管理员密码" required>
+                        <small style="color: #666; font-size: 0.85rem;">
+                            首次登录时，输入的密码将被设置为管理员密码
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label for="github-token">GitHub Token（可选，用于同步数据）</label>
+                        <input type="password" id="github-token" placeholder="输入 GitHub Personal Access Token">
+                        <small style="color: #666; font-size: 0.85rem;">
+                            用于将数据同步到 GitHub，实现跨设备访问。如不需要可留空。
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="login-modal-cancel">取消</button>
+                <button type="button" class="btn-primary" id="login-modal-submit">登录</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>设置</h3>
+                <button class="modal-close" id="settings-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>登录状态</label>
+                    <p id="settings-login-status">未登录</p>
+                </div>
+                <div class="form-group">
+                    <label for="settings-github-token">GitHub Token</label>
+                    <input type="password" id="settings-github-token" placeholder="输入 GitHub Personal Access Token">
+                    <small style="color: #666; font-size: 0.85rem;">
+                        用于将数据同步到 GitHub。获取方式：GitHub Settings → Developer settings → Personal access tokens
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="settings-github-owner">GitHub 用户名</label>
+                    <input type="text" id="settings-github-owner" placeholder="Kisdews">
+                </div>
+                <div class="form-group">
+                    <label for="settings-github-repo">仓库名称</label>
+                    <input type="text" id="settings-github-repo" placeholder="kisdews.github.io">
+                </div>
+                <div class="form-group">
+                    <label for="settings-github-branch">分支名称</label>
+                    <input type="text" id="settings-github-branch" placeholder="main">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="settings-modal-cancel">关闭</button>
+                <button type="button" class="btn-primary" id="settings-modal-save">保存</button>
+            </div>
+        </div>
+    </div>
     
     <footer>
         <p>&copy; Kisdews Games Page</p>
     </footer>
 
     <script src="./shared/scripts/common.js"></script>
+    <script src="./shared/scripts/auth.js"></script>
+    <script src="./shared/scripts/github-api.js"></script>
     <script src="./index.js"></script>
 </body>
 </html>

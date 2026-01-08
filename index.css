@@ -12,6 +12,13 @@
     padding: 2rem 0;
 }
 
+.auth-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
 .welcome-section h2 {
     font-size: 2rem;
     color: #2c3e50;
@@ -68,7 +75,18 @@
     align-items: center;
     text-align: center;
     transition: all 0.3s ease;
-    cursor: pointer;
+    cursor: move; /* 拖动光标 */
+    user-select: none;
+}
+
+.feature-card:active {
+    cursor: grabbing;
+}
+
+.feature-card.drag-over {
+    border-color: #3498db;
+    border-style: dashed;
+    transform: scale(1.05);
 }
 
 .feature-card:hover {

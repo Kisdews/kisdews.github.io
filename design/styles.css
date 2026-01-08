@@ -19,12 +19,23 @@
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     padding: 1.5rem;
-    cursor: pointer;
+    cursor: move;
     transition: all 0.3s ease;
     position: relative;
     text-decoration: none;
     color: inherit;
     display: block;
+    user-select: none;
+}
+
+.game-card:active {
+    cursor: grabbing;
+}
+
+.game-card.drag-over {
+    border-color: #3498db;
+    border-style: dashed;
+    transform: scale(1.02);
 }
 
 .game-card-actions {
@@ -263,9 +274,20 @@
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     padding: 1.5rem;
-    cursor: pointer;
+    cursor: move;
     transition: all 0.3s ease;
     position: relative;
+    user-select: none;
+}
+
+.idea-card:active {
+    cursor: grabbing;
+}
+
+.idea-card.drag-over {
+    border-color: #3498db;
+    border-style: dashed;
+    transform: scale(1.02);
 }
 
 .idea-card:hover {
