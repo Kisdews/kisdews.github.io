@@ -121,7 +121,7 @@ class GitHubAPI {
     }
 
     // 保存文件内容
-    async saveFile(filePath, content, message = 'Update data', retryCount = 0) {
+    async saveFile(filePath, content, message = 'Update data', retryCount = 0, maxRetries = 3) {
         const token = window.authManager?.getGitHubToken();
         if (!token) {
             throw new Error('需要 GitHub Token 才能保存文件');
@@ -153,12 +153,13 @@ class GitHubAPI {
             });
             
             if (!response.ok) {
-                // 如果是 409 冲突错误，尝试重新获取 SHA 后重试一次
-                if (response.status === 409 && retryCount < 1) {
-                    console.warn('检测到文件冲突，重新获取最新 SHA 后重试...');
-                    // 等待一小段时间后重试
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    return await this.saveFile(filePath, content, message, retryCount + 1);
+                // 如果是 409 冲突错误，尝试重新获取 SHA 后重试
+                if (response.status === 409 && retryCount < maxRetries) {
+                    console.warn(`检测到文件冲突 (${retryCount + 1}/${maxRetries})，重新获取最新 SHA 后重试...`);
+                    // 等待时间递增：500ms, 1000ms, 1500ms
+                    const waitTime = 500 * (retryCount + 1);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    return await this.saveFile(filePath, content, message, retryCount + 1, maxRetries);
                 }
                 
                 const errorData = await response.json().catch(() => ({}));
@@ -216,6 +217,235 @@ class GitHubAPI {
     // 保存想法顺序（按游戏）
     async saveIdeasOrder(gameId, order) {
         return await this.saveFile(`${this.dataPath}/ideas-order-${gameId}.json`, order, `Update ideas order for game ${gameId}`);
+    }
+
+    // ========== 批量提交方法（一次同步创建一个 commit） ==========
+
+    // 获取分支的最新 commit SHA
+    async getBranchCommitSHA() {
+        try {
+            const url = `${this.baseURL}/git/ref/heads/${this.branch}`;
+            const response = await fetch(url, {
+                headers: this.getHeaders()
+            });
+            
+            if (!response.ok) {
+                throw new Error(`获取分支信息失败: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.object.sha;
+        } catch (error) {
+            console.error('获取分支 commit SHA 失败:', error);
+            throw error;
+        }
+    }
+
+    // 获取 commit 的 tree SHA
+    async getCommitTreeSHA(commitSHA) {
+        try {
+            const url = `${this.baseURL}/git/commits/${commitSHA}`;
+            const response = await fetch(url, {
+                headers: this.getHeaders()
+            });
+            
+            if (!response.ok) {
+                throw new Error(`获取 commit 信息失败: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.tree.sha;
+        } catch (error) {
+            console.error('获取 commit tree SHA 失败:', error);
+            throw error;
+        }
+    }
+
+    // 创建 blob（文件内容）
+    async createBlob(content) {
+        try {
+            const jsonString = JSON.stringify(content, null, 2);
+            const base64Content = this.encodeToBase64(jsonString);
+            
+            const url = `${this.baseURL}/git/blobs`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({
+                    content: base64Content,
+                    encoding: 'base64'
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`创建 blob 失败: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.sha;
+        } catch (error) {
+            console.error('创建 blob 失败:', error);
+            throw error;
+        }
+    }
+
+    // 获取当前 tree 的所有文件（递归获取）
+    async getTreeRecursive(treeSHA, path = '') {
+        try {
+            const url = `${this.baseURL}/git/trees/${treeSHA}?recursive=1`;
+            const response = await fetch(url, {
+                headers: this.getHeaders()
+            });
+            
+            if (!response.ok) {
+                throw new Error(`获取 tree 失败: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.tree || [];
+        } catch (error) {
+            console.error('获取 tree 失败:', error);
+            throw error;
+        }
+    }
+
+    // 创建新的 tree（包含所有要更新的文件）
+    async createTree(baseTreeSHA, files) {
+        try {
+            // 获取当前 tree 的所有文件
+            const currentTree = await this.getTreeRecursive(baseTreeSHA);
+            
+            // 创建文件路径到 SHA 的映射（排除要更新的文件）
+            const fileMap = new Map();
+            currentTree.forEach(item => {
+                if (item.type === 'blob' && !item.path.startsWith(this.dataPath + '/')) {
+                    // 保留非 data 目录的文件
+                    fileMap.set(item.path, {
+                        path: item.path,
+                        mode: item.mode,
+                        type: item.type,
+                        sha: item.sha
+                    });
+                }
+            });
+            
+            // 添加或更新要保存的文件
+            for (const file of files) {
+                const blobSHA = await this.createBlob(file.content);
+                fileMap.set(file.path, {
+                    path: file.path,
+                    mode: '100644', // 普通文件
+                    type: 'blob',
+                    sha: blobSHA
+                });
+            }
+            
+            // 构建 tree 数组
+            const tree = Array.from(fileMap.values());
+            
+            const url = `${this.baseURL}/git/trees`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({
+                    base_tree: baseTreeSHA,
+                    tree: tree
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`创建 tree 失败: ${response.status} - ${errorData.message || ''}`);
+            }
+            
+            const data = await response.json();
+            return data.sha;
+        } catch (error) {
+            console.error('创建 tree 失败:', error);
+            throw error;
+        }
+    }
+
+    // 创建 commit
+    async createCommit(treeSHA, parentCommitSHA, message) {
+        try {
+            const url = `${this.baseURL}/git/commits`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({
+                    message: message,
+                    tree: treeSHA,
+                    parents: [parentCommitSHA]
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`创建 commit 失败: ${response.status} - ${errorData.message || ''}`);
+            }
+            
+            const data = await response.json();
+            return data.sha;
+        } catch (error) {
+            console.error('创建 commit 失败:', error);
+            throw error;
+        }
+    }
+
+    // 更新分支引用
+    async updateBranchRef(commitSHA) {
+        try {
+            const url = `${this.baseURL}/git/refs/heads/${this.branch}`;
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: this.getHeaders(),
+                body: JSON.stringify({
+                    sha: commitSHA
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`更新分支失败: ${response.status} - ${errorData.message || ''}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('更新分支失败:', error);
+            throw error;
+        }
+    }
+
+    // 批量保存多个文件（创建一个 commit）
+    async saveFilesBatch(files, message = 'Update data files') {
+        const token = window.authManager?.getGitHubToken();
+        if (!token) {
+            throw new Error('需要 GitHub Token 才能保存文件');
+        }
+
+        try {
+            // 1. 获取当前分支的最新 commit SHA
+            const branchCommitSHA = await this.getBranchCommitSHA();
+            
+            // 2. 获取当前 commit 的 tree SHA
+            const baseTreeSHA = await this.getCommitTreeSHA(branchCommitSHA);
+            
+            // 3. 创建新的 tree（包含所有要更新的文件）
+            const newTreeSHA = await this.createTree(baseTreeSHA, files);
+            
+            // 4. 创建新的 commit
+            const newCommitSHA = await this.createCommit(newTreeSHA, branchCommitSHA, message);
+            
+            // 5. 更新分支引用
+            await this.updateBranchRef(newCommitSHA);
+            
+            console.log(`批量保存成功，创建了 1 个 commit，更新了 ${files.length} 个文件`);
+            return { commitSHA: newCommitSHA, filesCount: files.length };
+        } catch (error) {
+            console.error('批量保存失败:', error);
+            throw error;
+        }
     }
 }
 
