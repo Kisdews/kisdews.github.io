@@ -1,0 +1,21 @@
+# 数据文件目录 - 通过 GitHub API 管理，不需要 git 跟踪
+data/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+

@@ -104,6 +104,17 @@ class GitHubAPI {
         }
     }
 
+    // 将字符串转换为 Base64（支持 Unicode）
+    encodeToBase64(str) {
+        // 使用 encodeURIComponent + btoa 来支持 Unicode 字符
+        try {
+            return btoa(unescape(encodeURIComponent(str)));
+        } catch (error) {
+            console.error('Base64 编码失败:', error);
+            throw new Error('编码失败：包含不支持的字符');
+        }
+    }
+
     // 保存文件内容
     async saveFile(filePath, content, message = 'Update data') {
         const token = window.authManager?.getGitHubToken();
@@ -115,9 +126,13 @@ class GitHubAPI {
             const sha = await this.getFileSHA(filePath);
             const url = `${this.baseURL}/contents/${filePath}`;
             
+            // 将内容转换为 JSON 字符串，然后进行 Base64 编码（支持中文）
+            const jsonString = JSON.stringify(content, null, 2);
+            const base64Content = this.encodeToBase64(jsonString);
+            
             const body = {
                 message: message,
-                content: btoa(JSON.stringify(content, null, 2)), // Base64 编码
+                content: base64Content,
                 branch: this.branch
             };
             
