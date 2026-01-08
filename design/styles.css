@@ -105,14 +105,23 @@
 /* 游戏详情视图 */
 .game-header-top {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .game-header-top h2 {
     margin: 0;
     color: #2c3e50;
+    font-size: 1.8rem;
+    flex: 1;
+}
+
+.game-header-top .btn-secondary {
+    flex-shrink: 0;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    margin-left: 1rem;
 }
 
 .design-header {
