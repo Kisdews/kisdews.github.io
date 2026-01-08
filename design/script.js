@@ -57,23 +57,30 @@ class DesignIdeasManager {
                     window.githubAPI.loadIdeas()
                 ]);
                 
-                if (games !== null) {
+                if (games !== null && Array.isArray(games)) {
                     this.games = games;
+                    console.log('从 GitHub 加载游戏数据:', games.length, '个游戏');
                 } else {
                     // GitHub 没有数据，从 localStorage 读取
-                    this.games = this.loadGamesFromLocal();
+                    const localGames = this.loadGamesFromLocal();
+                    this.games = localGames;
+                    console.log('从本地存储加载游戏数据:', localGames.length, '个游戏');
                 }
                 
-                if (ideas !== null) {
+                if (ideas !== null && Array.isArray(ideas)) {
                     this.ideas = ideas;
+                    console.log('从 GitHub 加载想法数据:', ideas.length, '个想法');
                 } else {
                     // GitHub 没有数据，从 localStorage 读取
-                    this.ideas = this.loadIdeasFromLocal();
+                    const localIdeas = this.loadIdeasFromLocal();
+                    this.ideas = localIdeas;
+                    console.log('从本地存储加载想法数据:', localIdeas.length, '个想法');
                 }
             } else {
                 // 如果没有 GitHub API，从 localStorage 读取
                 this.games = this.loadGamesFromLocal();
                 this.ideas = this.loadIdeasFromLocal();
+                console.log('从本地存储加载数据（无 GitHub API）');
             }
         } catch (error) {
             console.error('加载数据失败，使用本地数据:', error);
@@ -1003,7 +1010,11 @@ class DesignIdeasManager {
             this.games.push(game);
         }
 
-        await this.saveGames();
+        // 保存数据并等待完成
+        const saveSuccess = await this.saveGames();
+        if (!saveSuccess) {
+            console.warn('保存游戏数据失败，但继续执行');
+        }
         await this.saveGamesOrder(); // 更新顺序
         this.updateGameSelects();
         await this.render();
@@ -1136,10 +1147,15 @@ class DesignIdeasManager {
             this.ideas.push(idea);
         }
 
-        this.saveIdeas();
-        this.saveIdeasOrder(); // 更新顺序
+        // 保存数据并等待完成
+        const saveSuccess = await this.saveIdeas();
+        if (!saveSuccess) {
+            console.warn('保存想法数据失败，但继续执行');
+        }
+        await this.saveIdeasOrder(); // 更新顺序
         this.initFilters();
         this.applyFilters();
+        await this.render(); // 重新渲染以确保显示最新数据
         this.closeIdeaModal();
     }
 
