@@ -40,40 +40,34 @@
                 <p id="days-counter-2">正在计算天数...</p>
             </div>
             <div class="auth-controls">
-                <button id="login-status-btn" class="btn-primary">登录</button>
+                <button id="token-status-btn" class="btn-primary">配置 Token</button>
                 <button id="settings-btn" class="btn-secondary">⚙️ 设置</button>
             </div>
         </section>
     </main>
 
-    <!-- 登录弹窗 -->
-    <div id="login-modal" class="modal">
+    <!-- Token 配置弹窗 -->
+    <div id="token-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>管理员登录</h3>
-                <button class="modal-close" id="login-modal-close">&times;</button>
+                <h3>配置 GitHub Token</h3>
+                <button class="modal-close" id="token-modal-close">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="login-form">
+                <form id="token-form">
                     <div class="form-group">
-                        <label for="login-password">管理员密码</label>
-                        <input type="password" id="login-password" placeholder="输入管理员密码" required>
-                        <small style="color: #666; font-size: 0.85rem;">
-                            首次登录时，输入的密码将被设置为管理员密码
-                        </small>
-                    </div>
-                    <div class="form-group">
-                        <label for="github-token">GitHub Token（可选，用于同步数据）</label>
+                        <label for="github-token">GitHub Personal Access Token</label>
                         <input type="password" id="github-token" placeholder="输入 GitHub Personal Access Token">
                         <small style="color: #666; font-size: 0.85rem;">
-                            用于将数据同步到 GitHub，实现跨设备访问。如不需要可留空。
+                            配置 Token 后即可编辑内容并同步到 GitHub。未配置时只能查看。
+                            <br>获取方式：GitHub Settings → Developer settings → Personal access tokens
                         </small>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-secondary" id="login-modal-cancel">取消</button>
-                <button type="button" class="btn-primary" id="login-modal-submit">登录</button>
+                <button type="button" class="btn-secondary" id="token-modal-cancel">取消</button>
+                <button type="button" class="btn-primary" id="token-modal-save">保存</button>
             </div>
         </div>
     </div>
@@ -108,6 +102,17 @@
                 <div class="form-group">
                     <label for="settings-github-branch">分支名称</label>
                     <input type="text" id="settings-github-branch" placeholder="main">
+                </div>
+                <div class="form-group">
+                    <label>配置管理</label>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" id="export-config-btn" class="btn-secondary" style="flex: 1; min-width: 120px;">📤 导出配置</button>
+                        <button type="button" id="import-config-btn" class="btn-secondary" style="flex: 1; min-width: 120px;">📥 导入配置</button>
+                    </div>
+                    <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.5rem;">
+                        导出配置后，可以在其他设备上导入，避免重复输入
+                    </small>
+                    <input type="file" id="import-config-file" accept=".json" style="display: none;">
                 </div>
             </div>
             <div class="modal-footer">

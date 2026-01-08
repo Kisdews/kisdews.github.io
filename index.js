@@ -39,21 +39,23 @@ document.addEventListener('DOMContentLoaded', () => {
     initAuthSystem();
 });
 
-// 初始化登录系统
+// 初始化 Token 配置系统
 function initAuthSystem() {
-    // 更新登录状态显示
-    updateLoginStatus();
+    // 更新 Token 状态显示
+    updateTokenStatus();
 
-    // 登录状态按钮
-    const loginStatusBtn = document.getElementById('login-status-btn');
-    if (loginStatusBtn) {
-        loginStatusBtn.addEventListener('click', () => {
-            if (window.authManager?.isLoggedIn()) {
-                window.authManager.logout();
-                updateLoginStatus();
-                alert('已登出');
+    // Token 状态按钮
+    const tokenStatusBtn = document.getElementById('token-status-btn');
+    if (tokenStatusBtn) {
+        tokenStatusBtn.addEventListener('click', () => {
+            if (window.authManager?.hasToken()) {
+                if (confirm('确定要移除 Token 吗？移除后将无法编辑内容。')) {
+                    window.authManager.removeToken();
+                    updateTokenStatus();
+                    alert('Token 已移除');
+                }
             } else {
-                openLoginModal();
+                openTokenModal();
             }
         });
     }
@@ -66,34 +68,34 @@ function initAuthSystem() {
         });
     }
 
-    // 登录弹窗事件
-    const loginModal = document.getElementById('login-modal');
-    const loginModalClose = document.getElementById('login-modal-close');
-    const loginModalCancel = document.getElementById('login-modal-cancel');
-    const loginModalSubmit = document.getElementById('login-modal-submit');
+    // Token 配置弹窗事件
+    const tokenModal = document.getElementById('token-modal');
+    const tokenModalClose = document.getElementById('token-modal-close');
+    const tokenModalCancel = document.getElementById('token-modal-cancel');
+    const tokenModalSave = document.getElementById('token-modal-save');
 
-    if (loginModalClose) {
-        loginModalClose.addEventListener('click', () => {
-            closeLoginModal();
+    if (tokenModalClose) {
+        tokenModalClose.addEventListener('click', () => {
+            closeTokenModal();
         });
     }
 
-    if (loginModalCancel) {
-        loginModalCancel.addEventListener('click', () => {
-            closeLoginModal();
+    if (tokenModalCancel) {
+        tokenModalCancel.addEventListener('click', () => {
+            closeTokenModal();
         });
     }
 
-    if (loginModalSubmit) {
-        loginModalSubmit.addEventListener('click', async () => {
-            await handleLogin();
+    if (tokenModalSave) {
+        tokenModalSave.addEventListener('click', () => {
+            handleTokenSave();
         });
     }
 
-    if (loginModal) {
-        loginModal.addEventListener('click', (e) => {
-            if (e.target.id === 'login-modal') {
-                closeLoginModal();
+    if (tokenModal) {
+        tokenModal.addEventListener('click', (e) => {
+            if (e.target.id === 'token-modal') {
+                closeTokenModal();
             }
         });
     }
@@ -122,6 +124,31 @@ function initAuthSystem() {
         });
     }
 
+    // 导出配置
+    const exportConfigBtn = document.getElementById('export-config-btn');
+    if (exportConfigBtn) {
+        exportConfigBtn.addEventListener('click', () => {
+            exportConfig();
+        });
+    }
+
+    // 导入配置
+    const importConfigBtn = document.getElementById('import-config-btn');
+    const importConfigFile = document.getElementById('import-config-file');
+    if (importConfigBtn) {
+        importConfigBtn.addEventListener('click', () => {
+            importConfigFile.click();
+        });
+    }
+    if (importConfigFile) {
+        importConfigFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                importConfig(file);
+            }
+        });
+    }
+
     if (settingsModal) {
         settingsModal.addEventListener('click', (e) => {
             if (e.target.id === 'settings-modal') {
@@ -131,68 +158,62 @@ function initAuthSystem() {
     }
 }
 
-// 更新登录状态显示
-function updateLoginStatus() {
-    const loginStatusBtn = document.getElementById('login-status-btn');
-    if (loginStatusBtn) {
-        const isLoggedIn = window.authManager?.isLoggedIn() || false;
-        if (isLoggedIn) {
-            loginStatusBtn.textContent = '已登录 | 登出';
+// 更新 Token 状态显示
+function updateTokenStatus() {
+    const tokenStatusBtn = document.getElementById('token-status-btn');
+    if (tokenStatusBtn) {
+        const hasToken = window.authManager?.hasToken() || false;
+        if (hasToken) {
+            tokenStatusBtn.textContent = '已配置 | 移除';
         } else {
-            loginStatusBtn.textContent = '登录';
+            tokenStatusBtn.textContent = '配置 Token';
         }
     }
 }
 
-// 打开登录弹窗
-function openLoginModal() {
-    const modal = document.getElementById('login-modal');
+// 打开 Token 配置弹窗
+function openTokenModal() {
+    const modal = document.getElementById('token-modal');
     if (modal) {
-        document.getElementById('login-password').value = '';
         document.getElementById('github-token').value = window.authManager?.getGitHubToken() || '';
         modal.classList.add('active');
     }
 }
 
-// 关闭登录弹窗
-function closeLoginModal() {
-    const modal = document.getElementById('login-modal');
+// 关闭 Token 配置弹窗
+function closeTokenModal() {
+    const modal = document.getElementById('token-modal');
     if (modal) {
         modal.classList.remove('active');
     }
 }
 
-// 处理登录
-async function handleLogin() {
-    const password = document.getElementById('login-password').value;
+// 处理 Token 保存
+function handleTokenSave() {
     const token = document.getElementById('github-token').value.trim();
 
-    if (!password) {
-        alert('请输入密码');
+    if (!token) {
+        if (confirm('未输入 Token，将移除现有配置。确定继续吗？')) {
+            window.authManager.removeToken();
+            closeTokenModal();
+            updateTokenStatus();
+            alert('Token 已移除');
+        }
         return;
     }
 
-    const isValid = await window.authManager.login(password);
-    if (isValid) {
-        // 保存 GitHub Token
-        if (token) {
-            window.authManager.setGitHubToken(token);
-        }
-        
-        closeLoginModal();
-        updateLoginStatus();
-        alert('登录成功！');
-    } else {
-        alert('密码错误');
-    }
+    window.authManager.setGitHubToken(token);
+    closeTokenModal();
+    updateTokenStatus();
+    alert('Token 已保存！现在可以编辑内容了。');
 }
 
 // 打开设置弹窗
 function openSettingsModal() {
     const modal = document.getElementById('settings-modal');
     if (modal) {
-        const isLoggedIn = window.authManager?.isLoggedIn() || false;
-        document.getElementById('settings-login-status').textContent = isLoggedIn ? '已登录' : '未登录';
+        const hasToken = window.authManager?.hasToken() || false;
+        document.getElementById('settings-login-status').textContent = hasToken ? '已配置 Token' : '未配置 Token';
         document.getElementById('settings-github-token').value = window.authManager?.getGitHubToken() || '';
         
         // 加载 GitHub 仓库配置
@@ -236,9 +257,81 @@ function saveSettings() {
     alert('设置已保存，请刷新页面使配置生效');
 }
 
+// 导出配置
+function exportConfig() {
+    try {
+        const config = {
+            githubToken: window.authManager?.getGitHubToken() || '',
+            githubOwner: window.githubAPI?.owner || '',
+            githubRepo: window.githubAPI?.repo || '',
+            githubBranch: window.githubAPI?.branch || '',
+            exportDate: new Date().toISOString(),
+            version: '1.0'
+        };
+
+        const dataStr = JSON.stringify(config, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `kisdews-config-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        alert('配置已导出！请妥善保管此文件，不要分享给他人。');
+    } catch (error) {
+        console.error('导出配置失败:', error);
+        alert('导出配置失败：' + error.message);
+    }
+}
+
+// 导入配置
+function importConfig(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const config = JSON.parse(e.target.result);
+            
+            // 验证配置格式
+            if (!config.version) {
+                throw new Error('配置文件格式不正确');
+            }
+
+            // 导入配置
+            if (config.githubToken) {
+                window.authManager.setGitHubToken(config.githubToken);
+            }
+            
+            if (window.githubAPI && (config.githubOwner || config.githubRepo || config.githubBranch)) {
+                const githubConfig = {};
+                if (config.githubOwner) githubConfig.owner = config.githubOwner;
+                if (config.githubRepo) githubConfig.repo = config.githubRepo;
+                if (config.githubBranch) githubConfig.branch = config.githubBranch;
+                window.githubAPI.saveConfig(githubConfig);
+            }
+
+            // 更新设置弹窗中的值
+            document.getElementById('settings-github-token').value = config.githubToken || '';
+            if (window.githubAPI) {
+                document.getElementById('settings-github-owner').value = config.githubOwner || window.githubAPI.owner || '';
+                document.getElementById('settings-github-repo').value = config.githubRepo || window.githubAPI.repo || '';
+                document.getElementById('settings-github-branch').value = config.githubBranch || window.githubAPI.branch || '';
+            }
+
+            alert('配置已导入！请刷新页面使配置生效。');
+        } catch (error) {
+            console.error('导入配置失败:', error);
+            alert('导入配置失败：' + error.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
 // 全局函数：供其他页面调用
-window.openLoginModal = openLoginModal;
-window.updateLoginStatus = updateLoginStatus;
+window.openTokenModal = openTokenModal;
+window.updateTokenStatus = updateTokenStatus;
 
 // 初始化功能入口拖动排序
 function initFeaturesDragSort() {

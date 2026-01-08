@@ -109,11 +109,10 @@ class DesignIdeasManager {
 
     // 保存游戏数据
     async saveGames() {
-        const isLoggedIn = window.authManager?.isLoggedIn();
-        const hasToken = window.authManager?.hasGitHubToken();
+        const hasToken = window.authManager?.hasToken();
         
-        if (isLoggedIn && hasToken && window.githubAPI) {
-            // 登录且有 token，保存到 GitHub
+        if (hasToken && window.githubAPI) {
+            // 有 token，保存到 GitHub
             try {
                 await window.githubAPI.saveGames(this.games);
                 // 同时保存到本地作为备份
@@ -127,13 +126,9 @@ class DesignIdeasManager {
                 return false;
             }
         } else {
-            // 未登录或没有 token，只保存到本地
+            // 没有 token，只保存到本地
             this.saveGamesToLocal();
-            if (!isLoggedIn) {
-                alert('您未登录，数据仅保存在本地。登录后可同步到服务器。');
-            } else if (!hasToken) {
-                alert('未配置 GitHub Token，数据仅保存在本地。请在设置中配置 Token。');
-            }
+            alert('未配置 GitHub Token，数据仅保存在本地。请返回首页配置 Token 以同步到服务器。');
             return false;
         }
     }
@@ -150,11 +145,10 @@ class DesignIdeasManager {
 
     // 保存想法数据
     async saveIdeas() {
-        const isLoggedIn = window.authManager?.isLoggedIn();
-        const hasToken = window.authManager?.hasGitHubToken();
+        const hasToken = window.authManager?.hasToken();
         
-        if (isLoggedIn && hasToken && window.githubAPI) {
-            // 登录且有 token，保存到 GitHub
+        if (hasToken && window.githubAPI) {
+            // 有 token，保存到 GitHub
             try {
                 await window.githubAPI.saveIdeas(this.ideas);
                 // 同时保存到本地作为备份
@@ -168,13 +162,9 @@ class DesignIdeasManager {
                 return false;
             }
         } else {
-            // 未登录或没有 token，只保存到本地
+            // 没有 token，只保存到本地
             this.saveIdeasToLocal();
-            if (!isLoggedIn) {
-                alert('您未登录，数据仅保存在本地。登录后可同步到服务器。');
-            } else if (!hasToken) {
-                alert('未配置 GitHub Token，数据仅保存在本地。请在设置中配置 Token。');
-            }
+            alert('未配置 GitHub Token，数据仅保存在本地。请返回首页配置 Token 以同步到服务器。');
             return false;
         }
     }
@@ -251,14 +241,14 @@ class DesignIdeasManager {
 
     // 更新 UI 权限控制
     updateUIForAuth() {
-        const isLoggedIn = window.authManager?.isLoggedIn() || false;
+        const hasToken = window.authManager?.hasToken() || false;
         
         // 控制编辑按钮显示
         const newGameBtn = document.getElementById('new-game-btn');
         const newIdeaBtn = document.getElementById('new-idea-btn');
         const editButtons = document.querySelectorAll('.game-card-action-btn');
         
-        if (isLoggedIn) {
+        if (hasToken) {
             // 已登录，显示所有编辑功能
             if (newGameBtn) newGameBtn.style.display = 'inline-block';
             if (newIdeaBtn) newIdeaBtn.style.display = 'inline-block';
@@ -449,10 +439,9 @@ class DesignIdeasManager {
         // 保存到本地
         localStorage.setItem(this.gamesOrderKey, JSON.stringify(order));
         
-        // 如果登录且有 token，保存到 GitHub
-        const isLoggedIn = window.authManager?.isLoggedIn();
-        const hasToken = window.authManager?.hasGitHubToken();
-        if (isLoggedIn && hasToken && window.githubAPI) {
+        // 如果有 token，保存到 GitHub
+        const hasToken = window.authManager?.hasToken();
+        if (hasToken && window.githubAPI) {
             try {
                 await window.githubAPI.saveGamesOrder(order);
             } catch (error) {
@@ -505,8 +494,8 @@ class DesignIdeasManager {
         const newGameBtn = document.getElementById('new-game-btn');
         if (newGameBtn) {
             newGameBtn.addEventListener('click', () => {
-                if (!window.authManager?.isLoggedIn()) {
-                    alert('请先登录以编辑内容。请返回首页进行登录。');
+                if (!window.authManager?.hasToken()) {
+                    alert('请先配置 Token 才能编辑内容。请返回首页配置 Token。');
                     return;
                 }
                 this.openGameModal();
@@ -525,8 +514,8 @@ class DesignIdeasManager {
         const newIdeaBtn = document.getElementById('new-idea-btn');
         if (newIdeaBtn) {
             newIdeaBtn.addEventListener('click', () => {
-                if (!window.authManager?.isLoggedIn()) {
-                    alert('请先登录以编辑内容。请返回首页进行登录。');
+                if (!window.authManager?.hasToken()) {
+                    alert('请先配置 Token 才能编辑内容。请返回首页配置 Token。');
                     return;
                 }
                 if (this.games.length === 0) {
