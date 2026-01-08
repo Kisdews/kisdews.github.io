@@ -316,7 +316,7 @@ class DesignIdeasManager {
 
         // 添加编辑和删除按钮事件
         container.querySelectorAll('.game-card-action-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const action = btn.dataset.action;
                 const gameId = btn.dataset.gameId;
@@ -493,7 +493,13 @@ class DesignIdeasManager {
         // 新游戏按钮
         const newGameBtn = document.getElementById('new-game-btn');
         if (newGameBtn) {
-            newGameBtn.addEventListener('click', () => {
+            // 移除旧的事件监听器（如果有）
+            const newBtn = newGameBtn.cloneNode(true);
+            newGameBtn.parentNode.replaceChild(newBtn, newGameBtn);
+            
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 if (!window.authManager?.hasToken()) {
                     alert('请先配置 Token 才能编辑内容。请返回首页配置 Token。');
                     return;
@@ -917,6 +923,11 @@ class DesignIdeasManager {
     // 打开游戏编辑弹窗
     openGameModal(gameId = null) {
         const modal = document.getElementById('game-modal');
+        if (!modal) {
+            console.error('游戏弹窗元素不存在');
+            return;
+        }
+        
         const form = document.getElementById('game-form');
         const deleteBtn = document.getElementById('game-modal-delete');
         const title = document.getElementById('game-modal-title');
@@ -931,14 +942,15 @@ class DesignIdeasManager {
             document.getElementById('game-description').value = game.description || '';
 
             title.textContent = '编辑游戏';
-            deleteBtn.style.display = 'inline-block';
+            if (deleteBtn) deleteBtn.style.display = 'inline-block';
         } else {
             // 新建模式
-            form.reset();
-            document.getElementById('game-id').value = '';
+            if (form) form.reset();
+            const gameIdInput = document.getElementById('game-id');
+            if (gameIdInput) gameIdInput.value = '';
 
-            title.textContent = '新游戏';
-            deleteBtn.style.display = 'none';
+            if (title) title.textContent = '新游戏';
+            if (deleteBtn) deleteBtn.style.display = 'none';
         }
 
         modal.classList.add('active');
