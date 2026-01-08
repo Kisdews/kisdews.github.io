@@ -1,0 +1,58 @@
+/* Blogs 页面专用样式 */
+
+#blogs-list {
+    margin-top: 2rem;
+}
+
+.blog-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.3s ease;
+}
+
+.blog-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.blog-item h3 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.blog-item h3 a {
+    color: #2c3e50;
+    text-decoration: none;
+}
+
+.blog-item h3 a:hover {
+    color: #34495e;
+    text-decoration: underline;
+}
+
+.blog-meta {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.blog-meta time {
+    margin-right: 1rem;
+}
+
+.blog-tags {
+    display: inline-block;
+}
+
+.blog-tag {
+    display: inline-block;
+    background: #e9ecef;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+    color: #495057;
+}
+

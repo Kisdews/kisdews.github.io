@@ -1,0 +1,29 @@
+/* Games 页面专用样式 */
+
+#games-list {
+    margin-top: 2rem;
+}
+
+.game-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.3s ease;
+}
+
+.game-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.game-item h3 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.game-item p {
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
