@@ -136,14 +136,36 @@ class DesignIdeasManager {
         }
 
         try {
+            // 同步前先重新获取服务器最新数据，避免冲突
+            const serverGames = await window.githubAPI.loadGames();
+            if (serverGames !== null && Array.isArray(serverGames)) {
+                // 合并：服务器数据优先，但保留本地新增的
+                const serverGameIds = new Set(serverGames.map(g => g.id));
+                const localNewGames = this.games.filter(g => !serverGameIds.has(g.id));
+                // 合并时，如果本地有更新的版本（通过 updatedAt 判断），使用本地的
+                const mergedGames = serverGames.map(serverGame => {
+                    const localGame = this.games.find(g => g.id === serverGame.id);
+                    if (localGame && new Date(localGame.updatedAt) > new Date(serverGame.updatedAt)) {
+                        return localGame; // 使用本地更新的版本
+                    }
+                    return serverGame; // 使用服务器版本
+                });
+                this.games = [...mergedGames, ...localNewGames];
+                // 保存合并后的数据到本地
+                this.saveGamesToLocal();
+            }
+            
+            // 现在同步合并后的数据到服务器
             await window.githubAPI.saveGames(this.games);
             console.log('游戏数据已同步到服务器');
             return true;
         } catch (error) {
             console.error('同步到 GitHub 失败:', error);
             const errorMsg = error.message || '未知错误';
-            alert(`同步到服务器失败。\n错误信息: ${errorMsg}\n\n请检查：\n1. GitHub Token 是否正确\n2. 仓库分支名称是否正确（当前: ${window.githubAPI?.branch || '未设置'}）\n3. Token 是否有 repo 权限`);
-            return false;
+            if (errorMsg.includes('文件已被其他设备修改')) {
+                throw new Error('同步失败：文件已被其他设备修改。请刷新页面获取最新数据后重试。');
+            }
+            throw error;
         }
     }
 
@@ -173,33 +195,7 @@ class DesignIdeasManager {
         }
 
         try {
-            // 同步前先重新获取服务器最新数据，避免冲突
-            console.log('同步前检查服务器最新数据...');
-            const [serverGames, serverIdeas] = await Promise.all([
-                window.githubAPI.loadGames(),
-                window.githubAPI.loadIdeas()
-            ]);
-
-            // 如果服务器有数据，使用服务器数据（因为服务器是最新的）
-            // 但保留本地新增的数据（通过 ID 判断）
-            if (serverGames !== null && Array.isArray(serverGames)) {
-                // 合并策略：服务器数据优先，但保留本地新增的（服务器没有的）
-                const serverGameIds = new Set(serverGames.map(g => g.id));
-                const localNewGames = this.games.filter(g => !serverGameIds.has(g.id));
-                this.games = [...serverGames, ...localNewGames];
-            }
-
-            if (serverIdeas !== null && Array.isArray(serverIdeas)) {
-                const serverIdeaIds = new Set(serverIdeas.map(i => i.id));
-                const localNewIdeas = this.ideas.filter(i => !serverIdeaIds.has(i.id));
-                this.ideas = [...serverIdeas, ...localNewIdeas];
-            }
-
-            // 保存合并后的数据到本地
-            this.saveGamesToLocal();
-            this.saveIdeasToLocal();
-
-            // 现在同步到服务器
+            // 同步所有数据（每个方法内部会处理合并逻辑）
             await Promise.all([
                 this.syncGamesToServer(),
                 this.syncIdeasToServer(),
@@ -287,14 +283,36 @@ class DesignIdeasManager {
         }
 
         try {
+            // 同步前先重新获取服务器最新数据，避免冲突
+            const serverIdeas = await window.githubAPI.loadIdeas();
+            if (serverIdeas !== null && Array.isArray(serverIdeas)) {
+                // 合并：服务器数据优先，但保留本地新增的
+                const serverIdeaIds = new Set(serverIdeas.map(i => i.id));
+                const localNewIdeas = this.ideas.filter(i => !serverIdeaIds.has(i.id));
+                // 合并时，如果本地有更新的版本（通过 updatedAt 判断），使用本地的
+                const mergedIdeas = serverIdeas.map(serverIdea => {
+                    const localIdea = this.ideas.find(i => i.id === serverIdea.id);
+                    if (localIdea && new Date(localIdea.updatedAt) > new Date(serverIdea.updatedAt)) {
+                        return localIdea; // 使用本地更新的版本
+                    }
+                    return serverIdea; // 使用服务器版本
+                });
+                this.ideas = [...mergedIdeas, ...localNewIdeas];
+                // 保存合并后的数据到本地
+                this.saveIdeasToLocal();
+            }
+            
+            // 现在同步合并后的数据到服务器
             await window.githubAPI.saveIdeas(this.ideas);
             console.log('想法数据已同步到服务器');
             return true;
         } catch (error) {
             console.error('同步到 GitHub 失败:', error);
             const errorMsg = error.message || '未知错误';
-            alert(`同步到服务器失败。\n错误信息: ${errorMsg}\n\n请检查：\n1. GitHub Token 是否正确\n2. 仓库分支名称是否正确（当前: ${window.githubAPI?.branch || '未设置'}）\n3. Token 是否有 repo 权限`);
-            return false;
+            if (errorMsg.includes('文件已被其他设备修改')) {
+                throw new Error('同步失败：文件已被其他设备修改。请刷新页面获取最新数据后重试。');
+            }
+            throw error;
         }
     }
 
