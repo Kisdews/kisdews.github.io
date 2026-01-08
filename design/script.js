@@ -46,11 +46,11 @@ class DesignIdeasManager {
         window.history.pushState({ gameId }, '', url);
     }
 
-    // 加载所有数据（优先从 GitHub 读取）
+    // 加载所有数据（优先从 GitHub 读取最新数据，自动覆盖本地）
     async loadAllData() {
         this.isLoading = true;
         try {
-            // 尝试从 GitHub 读取
+            // 优先从 GitHub 读取最新数据（自动同步）
             if (window.githubAPI) {
                 const [games, ideas] = await Promise.all([
                     window.githubAPI.loadGames(),
@@ -58,20 +58,24 @@ class DesignIdeasManager {
                 ]);
                 
                 if (games !== null && Array.isArray(games)) {
+                    // 服务器有数据，使用服务器数据（覆盖本地）
                     this.games = games;
-                    console.log('从 GitHub 加载游戏数据:', games.length, '个游戏');
+                    this.saveGamesToLocal(); // 同步到本地
+                    console.log('从服务器加载游戏数据:', games.length, '个游戏');
                 } else {
-                    // GitHub 没有数据，从 localStorage 读取
+                    // 服务器没有数据，从本地读取
                     const localGames = this.loadGamesFromLocal();
                     this.games = localGames;
                     console.log('从本地存储加载游戏数据:', localGames.length, '个游戏');
                 }
                 
                 if (ideas !== null && Array.isArray(ideas)) {
+                    // 服务器有数据，使用服务器数据（覆盖本地）
                     this.ideas = ideas;
-                    console.log('从 GitHub 加载想法数据:', ideas.length, '个想法');
+                    this.saveIdeasToLocal(); // 同步到本地
+                    console.log('从服务器加载想法数据:', ideas.length, '个想法');
                 } else {
-                    // GitHub 没有数据，从 localStorage 读取
+                    // 服务器没有数据，从本地读取
                     const localIdeas = this.loadIdeasFromLocal();
                     this.ideas = localIdeas;
                     console.log('从本地存储加载想法数据:', localIdeas.length, '个想法');
@@ -83,7 +87,7 @@ class DesignIdeasManager {
                 console.log('从本地存储加载数据（无 GitHub API）');
             }
         } catch (error) {
-            console.error('加载数据失败，使用本地数据:', error);
+            console.error('从服务器加载数据失败，使用本地数据:', error);
             // 失败时使用本地数据
             this.games = this.loadGamesFromLocal();
             this.ideas = this.loadIdeasFromLocal();
@@ -114,29 +118,30 @@ class DesignIdeasManager {
         }
     }
 
-    // 保存游戏数据
+    // 保存游戏数据（只保存到本地，不自动同步到服务器）
     async saveGames() {
+        // 只保存到本地，快速响应
+        this.saveGamesToLocal();
+        return true;
+    }
+
+    // 同步游戏数据到服务器（手动调用）
+    async syncGamesToServer() {
         const hasToken = window.authManager?.hasToken();
         
-        if (hasToken && window.githubAPI) {
-            // 有 token，保存到 GitHub
-            try {
-                await window.githubAPI.saveGames(this.games);
-                // 同时保存到本地作为备份
-                this.saveGamesToLocal();
-                return true;
-            } catch (error) {
-                console.error('保存到 GitHub 失败:', error);
-                const errorMsg = error.message || '未知错误';
-                alert(`保存到服务器失败，已保存到本地。\n错误信息: ${errorMsg}\n\n请检查：\n1. GitHub Token 是否正确\n2. 仓库分支名称是否正确（当前: ${window.githubAPI?.branch || '未设置'}）\n3. Token 是否有 repo 权限`);
-                // 失败时保存到本地
-                this.saveGamesToLocal();
-                return false;
-            }
-        } else {
-            // 没有 token，只保存到本地
-            this.saveGamesToLocal();
-            alert('未配置 GitHub Token，数据仅保存在本地。请返回首页配置 Token 以同步到服务器。');
+        if (!hasToken || !window.githubAPI) {
+            alert('未配置 GitHub Token，无法同步到服务器。请返回首页配置 Token。');
+            return false;
+        }
+
+        try {
+            await window.githubAPI.saveGames(this.games);
+            console.log('游戏数据已同步到服务器');
+            return true;
+        } catch (error) {
+            console.error('同步到 GitHub 失败:', error);
+            const errorMsg = error.message || '未知错误';
+            alert(`同步到服务器失败。\n错误信息: ${errorMsg}\n\n请检查：\n1. GitHub Token 是否正确\n2. 仓库分支名称是否正确（当前: ${window.githubAPI?.branch || '未设置'}）\n3. Token 是否有 repo 权限`);
             return false;
         }
     }
@@ -151,29 +156,30 @@ class DesignIdeasManager {
         }
     }
 
-    // 保存想法数据
+    // 保存想法数据（只保存到本地，不自动同步到服务器）
     async saveIdeas() {
+        // 只保存到本地，快速响应
+        this.saveIdeasToLocal();
+        return true;
+    }
+
+    // 同步想法数据到服务器（手动调用）
+    async syncIdeasToServer() {
         const hasToken = window.authManager?.hasToken();
         
-        if (hasToken && window.githubAPI) {
-            // 有 token，保存到 GitHub
-            try {
-                await window.githubAPI.saveIdeas(this.ideas);
-                // 同时保存到本地作为备份
-                this.saveIdeasToLocal();
-                return true;
-            } catch (error) {
-                console.error('保存到 GitHub 失败:', error);
-                const errorMsg = error.message || '未知错误';
-                alert(`保存到服务器失败，已保存到本地。\n错误信息: ${errorMsg}\n\n请检查：\n1. GitHub Token 是否正确\n2. 仓库分支名称是否正确（当前: ${window.githubAPI?.branch || '未设置'}）\n3. Token 是否有 repo 权限`);
-                // 失败时保存到本地
-                this.saveIdeasToLocal();
-                return false;
-            }
-        } else {
-            // 没有 token，只保存到本地
-            this.saveIdeasToLocal();
-            alert('未配置 GitHub Token，数据仅保存在本地。请返回首页配置 Token 以同步到服务器。');
+        if (!hasToken || !window.githubAPI) {
+            alert('未配置 GitHub Token，无法同步到服务器。请返回首页配置 Token。');
+            return false;
+        }
+
+        try {
+            await window.githubAPI.saveIdeas(this.ideas);
+            console.log('想法数据已同步到服务器');
+            return true;
+        } catch (error) {
+            console.error('同步到 GitHub 失败:', error);
+            const errorMsg = error.message || '未知错误';
+            alert(`同步到服务器失败。\n错误信息: ${errorMsg}\n\n请检查：\n1. GitHub Token 是否正确\n2. 仓库分支名称是否正确（当前: ${window.githubAPI?.branch || '未设置'}）\n3. Token 是否有 repo 权限`);
             return false;
         }
     }
@@ -257,15 +263,19 @@ class DesignIdeasManager {
         const newIdeaBtn = document.getElementById('new-idea-btn');
         const editButtons = document.querySelectorAll('.game-card-action-btn');
         
+        const syncBtn = document.getElementById('sync-to-server-btn');
+        
         if (hasToken) {
-            // 已登录，显示所有编辑功能
+            // 已登录，显示所有编辑功能和同步按钮
             if (newGameBtn) newGameBtn.style.display = 'inline-block';
             if (newIdeaBtn) newIdeaBtn.style.display = 'inline-block';
+            if (syncBtn) syncBtn.style.display = 'inline-block';
             editButtons.forEach(btn => btn.style.display = 'flex');
         } else {
-            // 未登录，隐藏编辑功能
+            // 未登录，隐藏编辑功能和同步按钮
             if (newGameBtn) newGameBtn.style.display = 'none';
             if (newIdeaBtn) newIdeaBtn.style.display = 'none';
+            if (syncBtn) syncBtn.style.display = 'none';
             editButtons.forEach(btn => btn.style.display = 'none');
         }
         
@@ -436,7 +446,7 @@ class DesignIdeasManager {
         });
     }
 
-    // 保存游戏顺序
+    // 保存游戏顺序（只保存到本地）
     async saveGamesOrder() {
         const container = document.getElementById('games-container');
         if (!container) return;
@@ -445,18 +455,8 @@ class DesignIdeasManager {
             card => card.dataset.gameId
         );
         
-        // 保存到本地
+        // 只保存到本地，不同步到服务器（需要时手动同步）
         localStorage.setItem(this.gamesOrderKey, JSON.stringify(order));
-        
-        // 如果有 token，保存到 GitHub
-        const hasToken = window.authManager?.hasToken();
-        if (hasToken && window.githubAPI) {
-            try {
-                await window.githubAPI.saveGamesOrder(order);
-            } catch (error) {
-                console.error('保存游戏顺序到 GitHub 失败:', error);
-            }
-        }
     }
 
     // 加载游戏顺序
@@ -499,6 +499,14 @@ class DesignIdeasManager {
 
     // 初始化事件监听
     initEventListeners() {
+        // 同步到服务器按钮
+        const syncBtn = document.getElementById('sync-to-server-btn');
+        if (syncBtn) {
+            syncBtn.addEventListener('click', async () => {
+                await this.syncAllToServer();
+            });
+        }
+
         // 新游戏按钮
         const newGameBtn = document.getElementById('new-game-btn');
         if (newGameBtn) {
@@ -864,19 +872,9 @@ class DesignIdeasManager {
             card => card.dataset.ideaId
         );
         
-        // 保存到本地
+        // 只保存到本地，不同步到服务器（需要时手动同步）
         const key = `${this.ideasOrderKey}-${this.currentGameId}`;
         localStorage.setItem(key, JSON.stringify(order));
-        
-        // 如果有 token，保存到 GitHub
-        const hasToken = window.authManager?.hasToken();
-        if (hasToken && window.githubAPI && this.currentGameId) {
-            try {
-                await window.githubAPI.saveIdeasOrder(this.currentGameId, order);
-            } catch (error) {
-                console.error('保存想法顺序到 GitHub 失败:', error);
-            }
-        }
     }
 
     // 加载想法顺序

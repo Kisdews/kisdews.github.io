@@ -67,16 +67,21 @@ class GitHubAPI {
             
             if (!response.ok) {
                 if (response.status === 404) {
-                    // 文件不存在，返回 null
+                    // 文件不存在，这是正常情况（新文件还未创建），静默返回 null
                     return null;
                 }
+                // 其他错误才记录日志
+                console.warn(`读取 GitHub 文件失败 (${response.status}): ${filePath}`);
                 throw new Error(`读取文件失败: ${response.status}`);
             }
             
             const text = await response.text();
             return text ? JSON.parse(text) : null;
         } catch (error) {
-            console.error('读取 GitHub 文件失败:', error);
+            // 404 错误是预期的，不需要记录
+            if (error.message && !error.message.includes('404')) {
+                console.error('读取 GitHub 文件失败:', error);
+            }
             return null;
         }
     }
