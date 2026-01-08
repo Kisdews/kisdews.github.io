@@ -35,5 +35,18 @@
     "priority": "中",
     "createdAt": "2026-01-08T08:55:58.492Z",
     "updatedAt": "2026-01-08T08:55:58.492Z"
+  },
+  {
+    "id": "idea-1767862569677-2fjh9jzmk",
+    "gameId": "game-1767862291796-76bmhm92t",
+    "title": "3",
+    "content": "3",
+    "tags": [
+      "好"
+    ],
+    "status": "草稿",
+    "priority": "中",
+    "createdAt": "2026-01-08T08:56:09.677Z",
+    "updatedAt": "2026-01-08T08:56:09.677Z"
   }
 ]
