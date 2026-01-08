@@ -120,7 +120,8 @@ class DesignIdeasManager {
                 return true;
             } catch (error) {
                 console.error('保存到 GitHub 失败:', error);
-                alert('保存到服务器失败，已保存到本地。请检查 GitHub Token 是否正确。');
+                const errorMsg = error.message || '未知错误';
+                alert(`保存到服务器失败，已保存到本地。\n错误信息: ${errorMsg}\n\n请检查：\n1. GitHub Token 是否正确\n2. 仓库分支名称是否正确（当前: ${window.githubAPI?.branch || '未设置'}）\n3. Token 是否有 repo 权限`);
                 // 失败时保存到本地
                 this.saveGamesToLocal();
                 return false;
@@ -156,7 +157,8 @@ class DesignIdeasManager {
                 return true;
             } catch (error) {
                 console.error('保存到 GitHub 失败:', error);
-                alert('保存到服务器失败，已保存到本地。请检查 GitHub Token 是否正确。');
+                const errorMsg = error.message || '未知错误';
+                alert(`保存到服务器失败，已保存到本地。\n错误信息: ${errorMsg}\n\n请检查：\n1. GitHub Token 是否正确\n2. 仓库分支名称是否正确（当前: ${window.githubAPI?.branch || '未设置'}）\n3. Token 是否有 repo 权限`);
                 // 失败时保存到本地
                 this.saveIdeasToLocal();
                 return false;

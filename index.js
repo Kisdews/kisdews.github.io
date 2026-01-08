@@ -120,7 +120,7 @@ function openSettingsModal() {
         if (window.githubAPI) {
             document.getElementById('settings-github-owner').value = window.githubAPI.owner || '';
             document.getElementById('settings-github-repo').value = window.githubAPI.repo || '';
-            document.getElementById('settings-github-branch').value = window.githubAPI.branch || '';
+            document.getElementById('settings-github-branch').value = window.githubAPI.branch || 'master';
         }
         
         modal.classList.add('active');

@@ -10,7 +10,7 @@ class GitHubAPI {
         const config = this.loadConfig();
         this.owner = config.owner || 'Kisdews';
         this.repo = config.repo || 'kisdews.github.io';
-        this.branch = config.branch || 'main';
+        this.branch = config.branch || 'master'; // 默认分支，可在设置中修改
         this.dataPath = 'data'; // 数据文件目录
         
         this.baseURL = `https://api.github.com/repos/${this.owner}/${this.repo}`;
@@ -132,8 +132,9 @@ class GitHubAPI {
             });
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(`保存文件失败: ${error.message || response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.message || `HTTP ${response.status}`;
+                throw new Error(`保存文件失败 (${response.status}): ${errorMessage}`);
             }
             
             return await response.json();
