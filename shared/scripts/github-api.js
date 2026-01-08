@@ -121,13 +121,14 @@ class GitHubAPI {
     }
 
     // 保存文件内容
-    async saveFile(filePath, content, message = 'Update data') {
+    async saveFile(filePath, content, message = 'Update data', retryCount = 0) {
         const token = window.authManager?.getGitHubToken();
         if (!token) {
             throw new Error('需要 GitHub Token 才能保存文件');
         }
 
         try {
+            // 每次保存前都重新获取最新的 SHA，避免并发冲突
             const sha = await this.getFileSHA(filePath);
             const url = `${this.baseURL}/contents/${filePath}`;
             
@@ -152,8 +153,21 @@ class GitHubAPI {
             });
             
             if (!response.ok) {
+                // 如果是 409 冲突错误，尝试重新获取 SHA 后重试一次
+                if (response.status === 409 && retryCount < 1) {
+                    console.warn('检测到文件冲突，重新获取最新 SHA 后重试...');
+                    // 等待一小段时间后重试
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    return await this.saveFile(filePath, content, message, retryCount + 1);
+                }
+                
                 const errorData = await response.json().catch(() => ({}));
                 const errorMessage = errorData.message || `HTTP ${response.status}`;
+                
+                if (response.status === 409) {
+                    throw new Error(`保存文件失败：文件已被其他设备修改。请刷新页面获取最新数据后重试。`);
+                }
+                
                 throw new Error(`保存文件失败 (${response.status}): ${errorMessage}`);
             }
             
