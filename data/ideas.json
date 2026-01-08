@@ -9,5 +9,18 @@
     "priority": "中",
     "createdAt": "2026-01-08T08:51:43.894Z",
     "updatedAt": "2026-01-08T08:51:43.894Z"
+  },
+  {
+    "id": "idea-1767862549077-lmoub83oo",
+    "gameId": "game-1767862291796-76bmhm92t",
+    "title": "3",
+    "content": "3",
+    "tags": [
+      "好"
+    ],
+    "status": "草稿",
+    "priority": "中",
+    "createdAt": "2026-01-08T08:55:49.077Z",
+    "updatedAt": "2026-01-08T08:55:49.077Z"
   }
 ]
